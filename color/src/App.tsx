@@ -150,28 +150,35 @@ function App() {
       </header>
 
       <section className="palette-grid">
+
         {palette.map((color, index) => {
           const light = isColorLight(color);
 
           return (
+
             <article
               key={`${color}-${index}`}
               className="swatch"
               style={{ backgroundColor: color }}
             >
+
               <div className={`swatch-content ${light ? "dark-text" : "light-text"}`}>
+
                 <div className="swatch-meta">
                   <h2>{color}</h2>
                   <p>{hexToRgb(color)}</p>
                 </div>
 
                 <div className="swatch-actions">
+
                   <button type="button" onClick={() => toggleClock(index)}>
                     {locked[index] ? "Unlock" : "Lock"}
                   </button>
+
                   <button type="button" onClick={() => copyToClipboard(color, index)}>
                     {copiedState[index] ? "Copied!" : "Copy"}
                   </button>
+
                 </div>
               </div>
             </article>
@@ -180,15 +187,19 @@ function App() {
       </section>
 
       <footer className="toolbar">
+
         <button type="button" onClick={paletteGenerator}>
           Generate palette
         </button>
+
         <button type="button" onClick={copyToAll}>
           {copiedAll ? "All copied!" : "Copy all"}
         </button>
+
         <button type="button" onClick={unlockAll}>
           Unlock all
         </button>
+        
       </footer>
     </main>
   );
