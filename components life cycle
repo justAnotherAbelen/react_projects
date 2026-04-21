@@ -1,0 +1,143 @@
+# React Component Lifecycle  
+*A quick guide to understanding and using the React component lifecycle.*
+
+---  
+
+## Table of Contents
+1. [What is the lifecycle?](#what-is-the-lifecycle)  
+2. [Class Component Lifecycle (Legacy)](#class-component-lifecycle-legacy)  
+   - [Mounting](#mounting)  
+   - [Updating](#updating)  
+   - [Unmounting](#unmounting)  
+   - [Error handling](#error-handling)  
+3. [Functional Component Lifecycle (Hooks)](#functional-component-lifecycle-hooks)  
+   - [`useEffect` basics](#useeffect-basics)  
+   - [Mimicking specific phases](#mimicking-specific-phases)  
+4. [Best Practices](#best-practices)  
+5. [References](#references)  
+
+---  
+
+## What is the lifecycle?  
+
+In React, a component goes through a series of **phases** from the moment it is created until it is removed from the DOM.  
+During each phase you can run code (e.g., fetch data, set up subscriptions, clean‑up resources) by using **lifecycle methods** (class components) or **hooks** (function components).
+
+---  
+
+## Class Component Lifecycle (Legacy)  
+
+> **NOTE:** Class components are still supported, but most new code uses functional components + hooks.  
+
+### 1. Mounting – component is inserted into the DOM  
+
+| Method | When it runs | Typical use |
+|--------|--------------|------------|
+| `constructor(props)` | Before mounting | Initialize state, bind event handlers |
+| `static getDerivedStateFromProps(props, state)` | Right before render | Derive state from props (rarely needed) |
+| `render()` | During mounting | Returns JSX |
+| `componentDidMount()` | **After** the component is in the DOM | Data fetching, subscriptions, timers |
+
+### 2. Updating – component re‑renders due to props or state change  
+
+| Method | When it runs | Typical use |
+|--------|--------------|------------|
+| `static getDerivedStateFromProps` | Before every render (mount + update) | Sync state with prop changes |
+| `shouldComponentUpdate(nextProps, nextState)` | Before render | Performance optimization – return `false` to skip render |
+| `render()` | During update | Produce new UI |
+| `getSnapshotBeforeUpdate(prevProps, prevPrevState)` | Right before DOM changes are committed | Capture information (e.g., scroll position) |
+| `componentDidUpdate(prevProps, prevState, snapshot)` | **After** DOM updates | Operate on updated DOM, network requests based on prop changes |
+
+### 3. Unmounting – component is removed from the DOM  
+
+| Method | When it runs | Typical use |
+|--------|--------------|------------|
+| `componentWillUnmount()` | Before removal | Clean up timers, cancel network requests, unsubscribe |
+
+### 4. Error handling  
+
+| Method | When it runs | Typical use |
+|--------|--------------|------------|
+| `static getDerivedStateFromError(error)` | When a child throws | Render fallback UI |
+| `componentDidCatch(error, info)` | After an error is thrown | Log error details, side‑effects |
+
+---  
+
+## Functional Component Lifecycle (Hooks)  
+
+Functional components use **hooks** to tap into lifecycle moments.
+
+### `useEffect` basics  
+
+```jsx
+import { useEffect, useState } from 'react';
+
+function MyComponent({ userId }) {
+  const [user, setUser] = useState(null);
+
+  // Runs after every render (mount + update)
+  useEffect(() => {
+    fetch(`/api/users/${userId}`)
+      .then(res => res.json())
+      .then(setUser);
+  });
+
+  return user ? <h1>{user.name}</h1> : <p>Loading...</p>;
+}
+```
+
+- The **first argument** is a function that runs **after** the component has rendered.  
+- The **optional second argument** (`deps`) tells React **when** to re‑run the effect.
+
+### Mimicking specific phases  
+
+| Desired phase | Hook pattern |
+|--------------|--------------|
+| **Mount only** (`componentDidMount`) | `useEffect(() => { /* … */ }, []);` |
+| **Update on specific values** (`componentDidUpdate`) | `useEffect(() => { /* … */ }, [propA, stateB]);` |
+| **Cleanup before unmount** (`componentWillUnmount`) | Return a cleanup function from `useEffect`:<br>`useEffect(() => { const id = setInterval(...); return () => clearInterval(id); }, []);` |
+| **Capture previous props/state** (`getSnapshotBeforeUpdate`) | Use a **ref** to store previous values:<br>`const prev = useRef(); useEffect(() => { const snapshot = prev.current; /* use snapshot */; prev.current = value; }, [value]);` |
+
+### Example: Data fetch with cleanup  
+
+```jsx
+function Posts({ limit }) {
+  const [posts, setPosts] = useState([]);
+
+  useEffect(() => {
+    const controller = new AbortController();                // for cleanup
+    fetch(`/api/posts?limit=${limit}`, { signal: controller.signal })
+      .then(r => r.json())
+      .then(setPosts)
+      .catch(err => {
+        if (err.name !== 'AbortError') console.error(err);
+      });
+
+    // Cleanup runs on unmount or before next effect call
+    return () => controller.abort();
+  }, [limit]); // re‑run when `limit` changes
+}
+```
+
+---  
+
+## Best Practices  
+
+1. **Prefer functional components & hooks** – they’re easier to read and avoid many of the quirky class‑method ordering issues.  
+2. **Keep effects focused** – one effect per logical concern (e.g., data fetching, subscriptions, timers).  
+3. **Specify dependencies** – always include every value used inside the effect; lint tools (`eslint-plugin-react-hooks`) help.  
+4. **Avoid heavy work in `render`** – keep `render` pure and fast; move side‑effects to `useEffect`.  
+5. **Cleanup** – always return a cleanup function from `useEffect` when you set timers, subscriptions, or async work.  
+6. **Memoization** – use `React.memo`, `useMemo`, and `useCallback` when you need to prevent unnecessary re‑renders.  
+
+---  
+
+## References  
+
+- Official React Docs – [Class Component Lifecycle](https://reactjs.org/docs/react-component.html)  
+- Official React Docs – [Hooks API Reference – useEffect](https://reactjs.org/docs/hooks-reference.html#useeffect)  
+- Dan Abramov’s “You Might Not Need an Effect” article – explains when `useEffect` is (and isn’t) required.  
+
+---  
+
+*Happy coding!* 🎉  
